@@ -304,8 +304,9 @@
           <input type="text" id="newCampaignName" placeholder="e.g. Caloundra Search">
         </div>
         <div class="field">
-          <label>Monthly budget</label>
+          <label>Daily budget</label>
           <input type="number" id="newCampaignBudget" placeholder="0">
+          <div class="hint">The daily budget set in Google Ads for this campaign — the tracker works out the monthly cap and pacing from this (daily × 30.4).</div>
         </div>
       </div>
       <button id="btnAddCampaign" class="primary">Add to <span id="addToAccountLabel"></span></button>
@@ -460,15 +461,19 @@
     return 'off-pace';
   }
 
+  const GOOGLE_DAYS_PER_MONTH = 30.4; // Google Ads' average-days-per-month constant for monthly spend caps
+
   function campaignStats(campaign, monthKey, asOfDay){
     const dim = daysInMonth(monthKey);
-    const budget = getBudgetForMonth(campaign, monthKey);
+    const dailyBudget = getBudgetForMonth(campaign, monthKey);
+    const monthlyCap = dailyBudget * GOOGLE_DAYS_PER_MONTH; // what Google won't exceed this month, per its own pacing
     const {spend, date} = getLatestSpend(campaign.id, monthKey);
-    const expected = asOfDay > 0 ? budget * (asOfDay/dim) : 0;
+    // "where it should be tracking": daily budget × days elapsed, not monthlyCap ÷ actual days-in-month
+    const expected = asOfDay > 0 ? dailyBudget * asOfDay : 0;
     const pace = expected > 0 ? spend/expected : (spend > 0 ? Infinity : null);
     const projected = asOfDay > 0 ? (spend/asOfDay)*dim : null;
     const status = classify(pace);
-    return {budget, spend, date, expected, pace, projected, status, dim};
+    return {dailyBudget, monthlyCap, spend, date, expected, pace, projected, status, dim};
   }
 
   // ---------- rendering ----------
@@ -489,31 +494,32 @@
 
   function renderKPIs(){
     const asOfDay = computeAsOfDay(selectedMonth);
-    let totalBudget=0, totalSpend=0, totalProjected=0, offCount=0;
+    let totalCap=0, totalSpend=0, totalExpected=0, totalProjected=0, offCount=0;
     data.campaigns.forEach(c=>{
       const s = campaignStats(c, selectedMonth, asOfDay);
-      totalBudget += s.budget;
+      totalCap += s.monthlyCap;
       totalSpend += s.spend;
+      totalExpected += s.expected;
       if(s.projected!==null) totalProjected += s.projected;
       if(s.status === 'off-pace') offCount++;
     });
     const wrap = document.getElementById('kpiRow');
-    const overallPace = totalBudget>0 && asOfDay>0 ? (totalSpend/(totalBudget*asOfDay/daysInMonth(selectedMonth))) : null;
+    const overallPace = totalExpected>0 ? (totalSpend/totalExpected) : null;
     wrap.innerHTML = `
       <div class="kpi">
-        <div class="label">Total Budget</div>
-        <div class="value">${fmtMoney(totalBudget)}</div>
+        <div class="label">Monthly Cap (daily × 30.4)</div>
+        <div class="value">${fmtMoney(totalCap)}</div>
         <div class="sub">${data.campaigns.length} campaigns</div>
       </div>
       <div class="kpi">
         <div class="label">Spent MTD</div>
         <div class="value">${fmtMoney(totalSpend)}</div>
-        <div class="sub">${totalBudget>0 ? Math.round(totalSpend/totalBudget*100)+'% of budget' : '—'}</div>
+        <div class="sub">should be ~${fmtMoney(totalExpected)} by now</div>
       </div>
       <div class="kpi ${overallPace!==null && overallPace>1.1 ? 'warn':''}">
         <div class="label">Projected Month-End</div>
         <div class="value">${fmtMoney(totalProjected)}</div>
-        <div class="sub">${totalBudget>0 ? (totalProjected>totalBudget? '+'+fmtMoney(totalProjected-totalBudget)+' over' : fmtMoney(totalBudget-totalProjected)+' under') : '—'}</div>
+        <div class="sub">${totalCap>0 ? (totalProjected>totalCap? '+'+fmtMoney(totalProjected-totalCap)+' over cap' : fmtMoney(totalCap-totalProjected)+' under cap') : '—'}</div>
       </div>
       <div class="kpi ${offCount>0?'bad':''}">
         <div class="label">Off Pace</div>
@@ -526,12 +532,12 @@
   function renderAccounts(){
     const asOfDay = computeAsOfDay(selectedMonth);
     const dim = daysInMonth(selectedMonth);
-    const markerPct = dim>0 ? (asOfDay/dim*100) : 0;
+    const markerPct = asOfDay>0 ? Math.min((asOfDay/GOOGLE_DAYS_PER_MONTH)*100, 100) : 0;
     const wrap = document.getElementById('accountsWrap');
 
     if(data.campaigns.length === 0){
       wrap.innerHTML = `<div class="account-group"><div class="empty-state">
-        No campaigns yet. Add your campaigns and monthly budgets to get started.
+        No campaigns yet. Add your campaigns and daily budgets to get started.
         <br><button class="primary" id="emptyAddBtn">Manage campaigns</button>
       </div></div>`;
       document.getElementById('emptyAddBtn').onclick = ()=>openManage();
@@ -541,12 +547,12 @@
     wrap.innerHTML = data.accounts.map(acct=>{
       const campaigns = data.campaigns.filter(c=>c.account===acct);
       if(!campaigns.length) return '';
-      let accBudget=0, accSpend=0;
+      let accCap=0, accSpend=0;
       const rows = campaigns.map(c=>{
         const s = campaignStats(c, selectedMonth, asOfDay);
-        accBudget += s.budget; accSpend += s.spend;
-        const fillPct = s.budget>0 ? Math.min(s.spend/s.budget,1)*100 : 0;
-        const overBadge = s.budget>0 && s.spend > s.budget ? `<span class="badge off-pace" style="margin-left:6px;">+${fmtMoney(s.spend-s.budget)} over</span>` : '';
+        accCap += s.monthlyCap; accSpend += s.spend;
+        const fillPct = s.monthlyCap>0 ? Math.min(s.spend/s.monthlyCap,1)*100 : 0;
+        const overBadge = s.monthlyCap>0 && s.spend > s.monthlyCap ? `<span class="badge off-pace" style="margin-left:6px;">+${fmtMoney(s.spend-s.monthlyCap)} over cap</span>` : '';
         return `
           <tr>
             <td>
@@ -554,7 +560,7 @@
                 <span class="sub">${s.date ? 'updated '+s.date : 'no data'}</span>
               </div>
             </td>
-            <td class="num">${fmtMoney(s.budget)}</td>
+            <td class="num">${fmtMoney(s.monthlyCap)}<span style="display:block; color:var(--text-faint); font-size:10.5px;">${fmtMoney(s.dailyBudget)}/day</span></td>
             <td class="num">${fmtMoney(s.spend)}</td>
             <td class="pace-cell">
               <div class="pace-track">
@@ -581,13 +587,13 @@
           <div class="account-head" onclick="PacingApp.toggleAccount('${escapeHtml(acct)}')">
             <div class="left"><span class="chev">▾</span><h3>${escapeHtml(acct)}</h3></div>
             <div class="account-totals">
-              <span>Budget <b>${fmtMoney(accBudget)}</b></span>
+              <span>Cap <b>${fmtMoney(accCap)}</b></span>
               <span>Spent <b>${fmtMoney(accSpend)}</b></span>
             </div>
           </div>
           <table class="campaign-table">
             <thead><tr>
-              <th>Campaign</th><th style="text-align:right;">Budget</th><th style="text-align:right;">Spent</th>
+              <th>Campaign</th><th style="text-align:right;">Monthly cap</th><th style="text-align:right;">Spent</th>
               <th>Pace</th><th style="text-align:right;">Projected</th><th>Status</th><th></th>
             </tr></thead>
             <tbody>${rows}</tbody>
@@ -633,14 +639,14 @@
       return;
     }
     el.innerHTML = list.map(c=>{
-      const budget = getBudgetForMonth(c, selectedMonth);
+      const daily = getBudgetForMonth(c, selectedMonth);
       return `
         <div class="campaign-list-item">
           <div class="info">
             <div class="n">${escapeHtml(c.name)}</div>
-            <div class="a">budget for ${selectedMonth}</div>
+            <div class="a">daily budget for ${selectedMonth} · cap ${fmtMoney(daily*GOOGLE_DAYS_PER_MONTH)}/mo</div>
           </div>
-          <input type="number" class="budget-input" value="${budget}"
+          <input type="number" class="budget-input" value="${daily}"
                  onchange="PacingApp.updateBudget('${c.id}', this.value)">
           <button class="icon-btn" onclick="PacingApp.deleteCampaign('${c.id}')" title="Delete">🗑</button>
         </div>`;
@@ -781,7 +787,7 @@
         <thead><tr><th>CSV row</th><th>Cost</th><th>Match</th></tr></thead>
         <tbody>${tableRows}</tbody>
       </table>
-      <div class="hint">Rows marked "new campaign" will be created under ${escapeHtml(account)} with today's cost as the first data point (set a budget afterwards in Manage campaigns).</div>
+      <div class="hint">Rows marked "new campaign" will be created under ${escapeHtml(account)} with today's cost as the first data point (set a daily budget afterwards in Manage campaigns).</div>
     `;
     document.getElementById('btnConfirmUpload').style.display = '';
   }
