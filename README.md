@@ -61,7 +61,48 @@ Azure Portal without redeploying), that's also possible with a custom Entra
 ID app registration — let me know if you want that version instead; it's a
 bit more setup but scales better past a handful of people.
 
-## 4. Using it day to day
+## 4. Automate daily spend (optional, recommended)
+
+Instead of manually exporting and uploading a CSV each day, Google Ads
+Scripts can push the numbers straight to the tracker on a schedule Google
+Ads manages itself. This runs on a completely different code path to the
+Reports UI export, so it isn't affected by whatever's currently broken with
+report downloads.
+
+**One-time setup:**
+
+1. In the Static Web App → **Environment variables**, add:
+   - `INGEST_API_KEY` = a random secret string (a password generator's fine —
+     20+ random characters, doesn't need to be memorable)
+2. Push the updated code (this adds a new `/api/ingest` endpoint that
+   accepts data via that key instead of requiring a human login).
+
+**Per Google Ads account (repeat 4 times, once per division):**
+
+1. Open `google-ads-script-template.js` in this folder.
+2. In Google Ads → **Tools & Settings → Bulk Actions → Scripts → + New
+   script**, paste it in.
+3. Fill in the 3 CONFIG lines at the top:
+   - `ACCOUNT_NAME` — must match one of the account names already in the
+     tracker exactly (check the tabs under Manage campaigns)
+   - `WEBHOOK_URL` — your tracker's URL + `/api/ingest`
+   - `API_KEY` — the same value you set as `INGEST_API_KEY`
+4. Click **Preview** to authorize it and check it finds campaigns and costs
+   correctly (check the log output).
+5. **Save**, then set a daily **Frequency** (e.g. once a day, early morning)
+   from the script's schedule settings.
+
+Once all 4 are running, spend updates itself daily — CSV upload is still
+there for backfilling a day you missed, or for anyone without Scripts
+access to a given account.
+
+**Note on the `/api/ingest` endpoint:** it's the one intentionally-public
+route in the app — reachable without an Entra ID login, since Google Ads
+Scripts can't do an interactive sign-in. It's protected instead by the
+`x-api-key` header check, so keep that key private the same way you'd keep
+any other credential.
+
+## 5. Using it day to day
 
 - Whoever uploads a CSV or edits a campaign, their change is saved centrally
   — everyone else sees it next time they refresh or reopen the page (there's
