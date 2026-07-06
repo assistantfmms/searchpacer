@@ -584,7 +584,7 @@
       const collapsed = collapsedAccounts[acct] ? 'collapsed' : '';
       return `
         <div class="account-group ${collapsed}" data-acct="${escapeHtml(acct)}">
-          <div class="account-head" onclick="PacingApp.toggleAccount('${escapeHtml(acct)}')">
+          <div class="account-head" data-account="${escapeHtml(acct)}" onclick="PacingApp.toggleAccount(this.dataset.account)">
             <div class="left"><span class="chev">▾</span><h3>${escapeHtml(acct)}</h3></div>
             <div class="account-totals">
               <span>Cap <b>${fmtMoney(accCap)}</b></span>
@@ -622,7 +622,7 @@
   function renderManageTabs(){
     const tabs = document.getElementById('manageTabs');
     tabs.innerHTML = data.accounts.map(a=>
-      `<div class="tab ${a===activeManageAccount?'active':''}" onclick="PacingApp.switchManageTab('${escapeHtml(a)}')">${escapeHtml(a)}</div>`
+      `<div class="tab ${a===activeManageAccount?'active':''}" data-account="${escapeHtml(a)}" onclick="PacingApp.switchManageTab(this.dataset.account)">${escapeHtml(a)}</div>`
     ).join('');
     document.getElementById('addToAccountLabel').textContent = activeManageAccount;
   }
