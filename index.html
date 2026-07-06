@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budget Pacing Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0d10;
+    --panel: #12161b;
+    --panel-2: #171c22;
+    --border: #232a32;
+    --border-soft: #1b2127;
+    --text: #e8edf2;
+    --text-dim: #8b97a3;
+    --text-faint: #5a6570;
+    --accent: #3ba7ff;
+    --accent-dim: #1c4a70;
+    --good: #35d399;
+    --good-dim: #143d31;
+    --watch: #f2b84b;
+    --watch-dim: #453a17;
+    --off: #f2555a;
+    --off-dim: #451e20;
+    --radius: 10px;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:1180px; margin:0 auto; padding:28px 20px 80px;}
+
+  /* Header */
+  header.top{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    flex-wrap:wrap; gap:16px; margin-bottom:24px;
+    border-bottom:1px solid var(--border-soft); padding-bottom:20px;
+  }
+  .brand{display:flex; flex-direction:column; gap:4px;}
+  .brand .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:0.14em;
+    color:var(--accent); text-transform:uppercase;
+  }
+  .brand h1{margin:0; font-size:22px; font-weight:700; letter-spacing:-0.01em;}
+  .top-controls{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .top-controls label{font-size:11px; color:var(--text-dim); margin-right:6px;}
+  input[type=month]{
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    font-family:var(--mono); font-size:13px; padding:8px 10px; border-radius:8px;
+  }
+  button{
+    font-family:var(--sans); font-size:13px; font-weight:600; cursor:pointer;
+    border-radius:8px; padding:9px 14px; border:1px solid var(--border);
+    background:var(--panel-2); color:var(--text); transition:border-color .15s, background .15s;
+  }
+  button:hover{border-color:#38424d;}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#04141f;}
+  button.primary:hover{background:#57b6ff;}
+  button.ghost{background:transparent;}
+  button.danger{color:var(--off);}
+  .asof{font-family:var(--mono); font-size:11px; color:var(--text-faint);}
+
+  /* KPI row */
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:28px;}
+  .kpi{
+    background:var(--panel); border:1px solid var(--border-soft); border-radius:var(--radius);
+    padding:16px 18px;
+  }
+  .kpi .label{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em;}
+  .kpi .value{font-family:var(--mono); font-size:24px; font-weight:700; margin-top:6px;}
+  .kpi .sub{font-size:11px; color:var(--text-faint); margin-top:4px;}
+  .kpi.warn .value{color:var(--watch);}
+  .kpi.bad .value{color:var(--off);}
+
+  /* Account groups */
+  .account-group{
+    background:var(--panel); border:1px solid var(--border-soft); border-radius:var(--radius);
+    margin-bottom:16px; overflow:hidden;
+  }
+  .account-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; cursor:pointer; user-select:none;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .account-head .left{display:flex; align-items:center; gap:10px;}
+  .account-head .chev{color:var(--text-faint); font-size:11px; transition:transform .15s;}
+  .account-group.collapsed .chev{transform:rotate(-90deg);}
+  .account-head h3{margin:0; font-size:14px; font-weight:600;}
+  .account-totals{display:flex; gap:22px; font-family:var(--mono); font-size:12px; color:var(--text-dim);}
+  .account-totals b{color:var(--text); font-weight:600;}
+
+  .campaign-table{width:100%; border-collapse:collapse;}
+  .account-group.collapsed .campaign-table{display:none;}
+  .campaign-table th{
+    text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--text-faint); font-weight:600; padding:10px 18px; border-bottom:1px solid var(--border-soft);
+  }
+  .campaign-table td{padding:12px 18px; border-bottom:1px solid var(--border-soft); vertical-align:middle;}
+  .campaign-table tr:last-child td{border-bottom:none;}
+  .campaign-table tr:hover td{background:rgba(255,255,255,0.015);}
+  .cname{font-size:13px; font-weight:500;}
+  .cname .sub{display:block; font-size:11px; color:var(--text-faint); font-family:var(--mono); margin-top:2px;}
+  .num{font-family:var(--mono); font-size:12.5px; text-align:right; white-space:nowrap;}
+
+  .pace-cell{width:220px;}
+  .pace-track{
+    position:relative; height:8px; border-radius:4px; background:var(--border-soft);
+    overflow:visible;
+  }
+  .pace-fill{position:absolute; left:0; top:0; height:100%; border-radius:4px;}
+  .pace-fill.on-pace{background:var(--good);}
+  .pace-fill.watch{background:var(--watch);}
+  .pace-fill.off-pace{background:var(--off);}
+  .pace-fill.no-data{background:var(--text-faint);}
+  .pace-marker{
+    position:absolute; top:-3px; width:2px; height:14px; background:var(--text);
+    opacity:0.55;
+  }
+  .pace-meta{display:flex; justify-content:space-between; margin-top:5px; font-family:var(--mono); font-size:11px; color:var(--text-faint);}
+  .pace-pct{font-weight:700;}
+  .pace-pct.on-pace{color:var(--good);}
+  .pace-pct.watch{color:var(--watch);}
+  .pace-pct.off-pace{color:var(--off);}
+
+  .badge{
+    display:inline-block; font-family:var(--mono); font-size:10px; font-weight:700;
+    padding:3px 7px; border-radius:5px; text-transform:uppercase; letter-spacing:.04em;
+  }
+  .badge.on-pace{background:var(--good-dim); color:var(--good);}
+  .badge.watch{background:var(--watch-dim); color:var(--watch);}
+  .badge.off-pace{background:var(--off-dim); color:var(--off);}
+  .badge.no-data{background:var(--border-soft); color:var(--text-faint);}
+
+  .row-actions{display:flex; gap:6px; justify-content:flex-end;}
+  .icon-btn{
+    background:none; border:none; color:var(--text-faint); cursor:pointer; font-size:14px; padding:4px 6px;
+  }
+  .icon-btn:hover{color:var(--text);}
+
+  .empty-state{padding:40px 18px; text-align:center; color:var(--text-faint); font-size:13px;}
+  .empty-state button{margin-top:12px;}
+
+  /* Modals */
+  .overlay{
+    position:fixed; inset:0; background:rgba(4,6,8,0.7); display:none;
+    align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .overlay.active{display:flex;}
+  .modal{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    width:100%; max-width:560px; max-height:86vh; display:flex; flex-direction:column;
+  }
+  .modal-head{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:16px 20px; border-bottom:1px solid var(--border-soft);
+  }
+  .modal-head h2{margin:0; font-size:15px; font-weight:700;}
+  .modal-body{padding:20px; overflow-y:auto;}
+  .modal-foot{padding:16px 20px; border-top:1px solid var(--border-soft); display:flex; justify-content:flex-end; gap:8px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:11px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em;}
+  .field input[type=text], .field input[type=number], .field select, .field textarea{
+    width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    padding:9px 10px; border-radius:7px; font-family:var(--sans); font-size:13px;
+  }
+  .field textarea{font-family:var(--mono); font-size:12px; min-height:140px; resize:vertical;}
+  .field-row{display:flex; gap:10px;}
+  .field-row .field{flex:1;}
+  .hint{font-size:11px; color:var(--text-faint); margin-top:4px; line-height:1.5;}
+
+  .campaign-list-item{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:10px 0; border-bottom:1px solid var(--border-soft);
+  }
+  .campaign-list-item:last-child{border-bottom:none;}
+  .campaign-list-item .info{flex:1;}
+  .campaign-list-item .info .n{font-size:13px; font-weight:500;}
+  .campaign-list-item .info .a{font-size:11px; color:var(--text-faint); font-family:var(--mono);}
+  .campaign-list-item .budget-input{width:110px;}
+
+  .match-table{width:100%; font-size:12px; border-collapse:collapse; margin-top:10px;}
+  .match-table th{text-align:left; color:var(--text-faint); font-size:10px; text-transform:uppercase; padding:6px 8px;}
+  .match-table td{padding:6px 8px; border-top:1px solid var(--border-soft); font-family:var(--mono);}
+  .match-tag{font-family:var(--sans); font-size:10px; padding:2px 6px; border-radius:4px; font-weight:600;}
+  .match-tag.matched{background:var(--good-dim); color:var(--good);}
+  .match-tag.new{background:var(--accent-dim); color:var(--accent);}
+
+  .tabs{display:flex; gap:4px; margin-bottom:16px; background:var(--panel-2); border-radius:8px; padding:4px;}
+  .tab{flex:1; text-align:center; padding:7px 0; font-size:12px; font-weight:600; border-radius:6px; cursor:pointer; color:var(--text-dim);}
+  .tab.active{background:var(--panel); color:var(--text);}
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    padding:10px 16px; border-radius:8px; font-size:13px; z-index:100;
+    opacity:0; pointer-events:none; transition:opacity .2s;
+  }
+  .toast.show{opacity:1;}
+
+  @media (max-width:720px){
+    .kpis{grid-template-columns:repeat(2,1fr);}
+    .pace-cell{width:140px;}
+    .campaign-table thead{display:none;}
+    .campaign-table td{display:block; width:100%; padding:6px 18px;}
+    .campaign-table tr{display:block; padding:10px 0; border-bottom:1px solid var(--border-soft);}
+    .num{text-align:left;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">Google Ads &middot; Multi-account</span>
+      <h1>Budget Pacing Tracker</h1>
+    </div>
+    <div class="top-controls">
+      <div>
+        <label for="monthPicker">Month</label>
+        <input type="month" id="monthPicker">
+      </div>
+      <span class="asof" id="asOfLabel"></span>
+      <button id="btnRefresh" class="ghost" title="Reload latest data from the server">⟳ Refresh</button>
+      <button id="btnUpload" class="primary">Upload CSV</button>
+      <button id="btnManage" class="ghost">Manage campaigns</button>
+    </div>
+  </header>
+
+  <div id="userBar" style="display:flex; justify-content:flex-end; align-items:center; gap:10px; margin:-12px 0 20px; font-size:11px; color:var(--text-faint); font-family:var(--mono);">
+    <span id="userLabel">checking sign-in…</span>
+    <a href="/.auth/logout" style="color:var(--text-faint);">sign out</a>
+  </div>
+
+  <div id="authGate" style="display:none;" class="account-group">
+    <div class="empty-state">
+      <div id="authGateMessage">You're signed in, but this email isn't on the access list for the tracker.</div>
+      <div class="hint" id="authGateEmail" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <section class="kpis" id="kpiRow"></section>
+
+  <section id="accountsWrap"></section>
+
+</div>
+
+<!-- Upload Modal -->
+<div class="overlay" id="uploadOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Upload spend data</h2>
+      <button class="icon-btn" data-close="uploadOverlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field">
+          <label>Account</label>
+          <select id="uploadAccount"></select>
+        </div>
+        <div class="field">
+          <label>As-of date (from export)</label>
+          <input type="date" id="uploadDate">
+        </div>
+      </div>
+      <div class="field">
+        <label>CSV file from Google Ads</label>
+        <input type="file" id="uploadFile" accept=".csv,text/csv">
+        <div class="hint">Export a "Campaign" report with Cost as month-to-date, one row per campaign. Or paste the CSV text below instead.</div>
+      </div>
+      <div class="field">
+        <label>...or paste CSV text</label>
+        <textarea id="uploadPaste" placeholder="Campaign,Cost&#10;Adelaide Search,4231.50&#10;Perth Search,1899.00"></textarea>
+      </div>
+      <button id="btnParse">Parse data</button>
+      <div id="parsePreview"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="ghost" data-close="uploadOverlay">Cancel</button>
+      <button class="primary" id="btnConfirmUpload" style="display:none;">Confirm & save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Modal -->
+<div class="overlay" id="manageOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Manage campaigns</h2>
+      <button class="icon-btn" data-close="manageOverlay">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs" id="manageTabs"></div>
+      <div id="manageList"></div>
+      <hr style="border-color:var(--border-soft); margin:16px 0;">
+      <div class="field-row">
+        <div class="field" style="flex:2;">
+          <label>New campaign name</label>
+          <input type="text" id="newCampaignName" placeholder="e.g. Caloundra Search">
+        </div>
+        <div class="field">
+          <label>Monthly budget</label>
+          <input type="number" id="newCampaignBudget" placeholder="0">
+        </div>
+      </div>
+      <button id="btnAddCampaign" class="primary">Add to <span id="addToAccountLabel"></span></button>
+    </div>
+    <div class="modal-foot">
+      <button class="ghost" data-close="manageOverlay">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'pacing-tracker-data';
+  const DEFAULT_ACCOUNTS = ["Jim's Electrical","Jim's Energy","Jim's Antennas","Jim's Security"];
+
+  let data = null;               // { accounts:[], campaigns:[{id,name,account,budgets:{}}], history:{ [id]:[{date,spend}] } }
+  let collapsedAccounts = {};
+  let selectedMonth = monthKeyOf(new Date());
+  let activeManageAccount = null;
+  let pendingParsed = null;      // rows staged from the upload parser
+
+  // ---------- auth ----------
+  async function checkAuth(){
+    try{
+      const res = await fetch('/.auth/me');
+      const info = await res.json();
+      const principal = info && info.clientPrincipal;
+      if(!principal){
+        window.location.href = '/.auth/login/aad?post_login_redirect_uri=' + encodeURIComponent(window.location.pathname);
+        return null;
+      }
+      document.getElementById('userLabel').textContent = principal.userDetails;
+      return principal;
+    }catch(e){
+      return null;
+    }
+  }
+
+  // ---------- storage (shared, via API) ----------
+  async function loadData(){
+    let res;
+    try{
+      res = await fetch('/api/data');
+    }catch(e){
+      showToast('Could not reach the server — check your connection.');
+      data = { accounts: DEFAULT_ACCOUNTS.slice(), campaigns: [], history: {} };
+      return;
+    }
+    if(res.status === 403){
+      const body = await res.json().catch(()=>({}));
+      document.getElementById('authGate').style.display = '';
+      document.getElementById('authGateEmail').textContent = body.signedInAs ? `Signed in as ${body.signedInAs}` : '';
+      document.querySelector('.app > header.top').style.display = 'none';
+      document.getElementById('kpiRow').style.display = 'none';
+      throw new Error('not-authorized');
+    }
+    const body = await res.json().catch(()=>null);
+    data = body || { accounts: DEFAULT_ACCOUNTS.slice(), campaigns: [], history: {} };
+    if(!data.accounts || !data.accounts.length) data.accounts = DEFAULT_ACCOUNTS.slice();
+  }
+
+  async function saveData(){
+    try{
+      const res = await fetch('/api/data', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+      });
+      if(!res.ok){
+        showToast('Save failed — changes may not have persisted for others.');
+      }
+    }catch(e){
+      showToast('Save failed — check your connection.');
+      console.error(e);
+    }
+  }
+
+  async function refreshFromServer(){
+    try{
+      const res = await fetch('/api/data');
+      if(res.status === 403) return;
+      const body = await res.json().catch(()=>null);
+      if(body){
+        data = body;
+        if(!data.accounts || !data.accounts.length) data.accounts = DEFAULT_ACCOUNTS.slice();
+        render();
+        showToast('Refreshed');
+      }
+    }catch(e){ /* ignore transient network errors */ }
+  }
+
+  // ---------- helpers ----------
+  function uid(){ return 'c_' + Math.random().toString(36).slice(2,10); }
+  function monthKeyOf(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+  function daysInMonth(monthKey){
+    const [y,m] = monthKey.split('-').map(Number);
+    return new Date(y, m, 0).getDate();
+  }
+  function fmtMoney(n){
+    if(n===null || n===undefined || isNaN(n)) return '—';
+    return '$' + n.toLocaleString('en-AU', {maximumFractionDigits:0});
+  }
+  function fmtPct(n){
+    if(n===null || n===undefined || !isFinite(n)) return '—';
+    return Math.round(n*100) + '%';
+  }
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2600);
+  }
+
+  function getBudgetForMonth(campaign, monthKey){
+    if(!campaign.budgets) return 0;
+    if(campaign.budgets[monthKey] !== undefined) return campaign.budgets[monthKey];
+    // fall back to the most recent prior month with a set budget
+    const keys = Object.keys(campaign.budgets).filter(k => k < monthKey).sort();
+    if(keys.length) return campaign.budgets[keys[keys.length-1]];
+    return 0;
+  }
+
+  function getLatestSpend(campaignId, monthKey){
+    const hist = (data.history[campaignId] || []).filter(e => e.date.slice(0,7) === monthKey);
+    if(!hist.length) return {spend:0, date:null};
+    hist.sort((a,b)=> a.date < b.date ? 1 : -1);
+    return {spend: hist[0].spend, date: hist[0].date};
+  }
+
+  function computeAsOfDay(monthKey){
+    const now = new Date();
+    const curKey = monthKeyOf(now);
+    if(monthKey < curKey) return daysInMonth(monthKey);
+    if(monthKey > curKey) return 0;
+    let maxDay = 0;
+    data.campaigns.forEach(c=>{
+      const {date} = getLatestSpend(c.id, monthKey);
+      if(date){
+        const day = Number(date.slice(8,10));
+        if(day > maxDay) maxDay = day;
+      }
+    });
+    return maxDay || now.getDate();
+  }
+
+  function classify(pace){
+    if(pace === null) return 'no-data';
+    if(pace >= 0.9 && pace <= 1.10) return 'on-pace';
+    if((pace > 1.10 && pace <= 1.25) || (pace < 0.9 && pace >= 0.75)) return 'watch';
+    return 'off-pace';
+  }
+
+  function campaignStats(campaign, monthKey, asOfDay){
+    const dim = daysInMonth(monthKey);
+    const budget = getBudgetForMonth(campaign, monthKey);
+    const {spend, date} = getLatestSpend(campaign.id, monthKey);
+    const expected = asOfDay > 0 ? budget * (asOfDay/dim) : 0;
+    const pace = expected > 0 ? spend/expected : (spend > 0 ? Infinity : null);
+    const projected = asOfDay > 0 ? (spend/asOfDay)*dim : null;
+    const status = classify(pace);
+    return {budget, spend, date, expected, pace, projected, status, dim};
+  }
+
+  // ---------- rendering ----------
+  function render(){
+    renderMonthPicker();
+    renderKPIs();
+    renderAccounts();
+  }
+
+  function renderMonthPicker(){
+    const picker = document.getElementById('monthPicker');
+    picker.value = selectedMonth;
+    const asOfDay = computeAsOfDay(selectedMonth);
+    const dim = daysInMonth(selectedMonth);
+    document.getElementById('asOfLabel').textContent =
+      asOfDay > 0 ? `data as of day ${asOfDay} of ${dim}` : 'no data yet this month';
+  }
+
+  function renderKPIs(){
+    const asOfDay = computeAsOfDay(selectedMonth);
+    let totalBudget=0, totalSpend=0, totalProjected=0, offCount=0;
+    data.campaigns.forEach(c=>{
+      const s = campaignStats(c, selectedMonth, asOfDay);
+      totalBudget += s.budget;
+      totalSpend += s.spend;
+      if(s.projected!==null) totalProjected += s.projected;
+      if(s.status === 'off-pace') offCount++;
+    });
+    const wrap = document.getElementById('kpiRow');
+    const overallPace = totalBudget>0 && asOfDay>0 ? (totalSpend/(totalBudget*asOfDay/daysInMonth(selectedMonth))) : null;
+    wrap.innerHTML = `
+      <div class="kpi">
+        <div class="label">Total Budget</div>
+        <div class="value">${fmtMoney(totalBudget)}</div>
+        <div class="sub">${data.campaigns.length} campaigns</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Spent MTD</div>
+        <div class="value">${fmtMoney(totalSpend)}</div>
+        <div class="sub">${totalBudget>0 ? Math.round(totalSpend/totalBudget*100)+'% of budget' : '—'}</div>
+      </div>
+      <div class="kpi ${overallPace!==null && overallPace>1.1 ? 'warn':''}">
+        <div class="label">Projected Month-End</div>
+        <div class="value">${fmtMoney(totalProjected)}</div>
+        <div class="sub">${totalBudget>0 ? (totalProjected>totalBudget? '+'+fmtMoney(totalProjected-totalBudget)+' over' : fmtMoney(totalBudget-totalProjected)+' under') : '—'}</div>
+      </div>
+      <div class="kpi ${offCount>0?'bad':''}">
+        <div class="label">Off Pace</div>
+        <div class="value">${offCount}</div>
+        <div class="sub">of ${data.campaigns.length} campaigns</div>
+      </div>
+    `;
+  }
+
+  function renderAccounts(){
+    const asOfDay = computeAsOfDay(selectedMonth);
+    const dim = daysInMonth(selectedMonth);
+    const markerPct = dim>0 ? (asOfDay/dim*100) : 0;
+    const wrap = document.getElementById('accountsWrap');
+
+    if(data.campaigns.length === 0){
+      wrap.innerHTML = `<div class="account-group"><div class="empty-state">
+        No campaigns yet. Add your campaigns and monthly budgets to get started.
+        <br><button class="primary" id="emptyAddBtn">Manage campaigns</button>
+      </div></div>`;
+      document.getElementById('emptyAddBtn').onclick = ()=>openManage();
+      return;
+    }
+
+    wrap.innerHTML = data.accounts.map(acct=>{
+      const campaigns = data.campaigns.filter(c=>c.account===acct);
+      if(!campaigns.length) return '';
+      let accBudget=0, accSpend=0;
+      const rows = campaigns.map(c=>{
+        const s = campaignStats(c, selectedMonth, asOfDay);
+        accBudget += s.budget; accSpend += s.spend;
+        const fillPct = s.budget>0 ? Math.min(s.spend/s.budget,1)*100 : 0;
+        const overBadge = s.budget>0 && s.spend > s.budget ? `<span class="badge off-pace" style="margin-left:6px;">+${fmtMoney(s.spend-s.budget)} over</span>` : '';
+        return `
+          <tr>
+            <td>
+              <div class="cname">${escapeHtml(c.name)}
+                <span class="sub">${s.date ? 'updated '+s.date : 'no data'}</span>
+              </div>
+            </td>
+            <td class="num">${fmtMoney(s.budget)}</td>
+            <td class="num">${fmtMoney(s.spend)}</td>
+            <td class="pace-cell">
+              <div class="pace-track">
+                <div class="pace-fill ${s.status}" style="width:${fillPct}%;"></div>
+                <div class="pace-marker" style="left:${markerPct}%;" title="time elapsed"></div>
+              </div>
+              <div class="pace-meta">
+                <span class="pace-pct ${s.status}">${fmtPct(s.pace)} of pace</span>
+                <span>${overBadge}</span>
+              </div>
+            </td>
+            <td class="num">${fmtMoney(s.projected)}</td>
+            <td><span class="badge ${s.status}">${s.status.replace('-',' ')}</span></td>
+            <td class="row-actions">
+              <button class="icon-btn" onclick="PacingApp.editCampaign('${c.id}')" title="Edit">✎</button>
+              <button class="icon-btn" onclick="PacingApp.deleteCampaign('${c.id}')" title="Delete">🗑</button>
+            </td>
+          </tr>`;
+      }).join('');
+
+      const collapsed = collapsedAccounts[acct] ? 'collapsed' : '';
+      return `
+        <div class="account-group ${collapsed}" data-acct="${escapeHtml(acct)}">
+          <div class="account-head" onclick="PacingApp.toggleAccount('${escapeHtml(acct)}')">
+            <div class="left"><span class="chev">▾</span><h3>${escapeHtml(acct)}</h3></div>
+            <div class="account-totals">
+              <span>Budget <b>${fmtMoney(accBudget)}</b></span>
+              <span>Spent <b>${fmtMoney(accSpend)}</b></span>
+            </div>
+          </div>
+          <table class="campaign-table">
+            <thead><tr>
+              <th>Campaign</th><th style="text-align:right;">Budget</th><th style="text-align:right;">Spent</th>
+              <th>Pace</th><th style="text-align:right;">Projected</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }).join('');
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // ---------- account collapse ----------
+  function toggleAccount(acct){
+    collapsedAccounts[acct] = !collapsedAccounts[acct];
+    renderAccounts();
+  }
+
+  // ---------- manage campaigns modal ----------
+  function openManage(){
+    activeManageAccount = data.accounts[0];
+    renderManageTabs();
+    renderManageList();
+    document.getElementById('manageOverlay').classList.add('active');
+  }
+  function renderManageTabs(){
+    const tabs = document.getElementById('manageTabs');
+    tabs.innerHTML = data.accounts.map(a=>
+      `<div class="tab ${a===activeManageAccount?'active':''}" onclick="PacingApp.switchManageTab('${escapeHtml(a)}')">${escapeHtml(a)}</div>`
+    ).join('');
+    document.getElementById('addToAccountLabel').textContent = activeManageAccount;
+  }
+  function switchManageTab(acct){
+    activeManageAccount = acct;
+    renderManageTabs();
+    renderManageList();
+  }
+  function renderManageList(){
+    const list = data.campaigns.filter(c=>c.account===activeManageAccount);
+    const el = document.getElementById('manageList');
+    if(!list.length){
+      el.innerHTML = `<div class="hint">No campaigns in ${escapeHtml(activeManageAccount)} yet.</div>`;
+      return;
+    }
+    el.innerHTML = list.map(c=>{
+      const budget = getBudgetForMonth(c, selectedMonth);
+      return `
+        <div class="campaign-list-item">
+          <div class="info">
+            <div class="n">${escapeHtml(c.name)}</div>
+            <div class="a">budget for ${selectedMonth}</div>
+          </div>
+          <input type="number" class="budget-input" value="${budget}"
+                 onchange="PacingApp.updateBudget('${c.id}', this.value)">
+          <button class="icon-btn" onclick="PacingApp.deleteCampaign('${c.id}')" title="Delete">🗑</button>
+        </div>`;
+    }).join('');
+  }
+  function updateBudget(id, val){
+    const c = data.campaigns.find(x=>x.id===id);
+    if(!c) return;
+    if(!c.budgets) c.budgets = {};
+    c.budgets[selectedMonth] = Number(val) || 0;
+    saveData();
+    render();
+  }
+  function addCampaign(){
+    const nameEl = document.getElementById('newCampaignName');
+    const budgetEl = document.getElementById('newCampaignBudget');
+    const name = nameEl.value.trim();
+    if(!name){ showToast('Enter a campaign name'); return; }
+    const c = { id: uid(), name, account: activeManageAccount, budgets: {} };
+    c.budgets[selectedMonth] = Number(budgetEl.value) || 0;
+    data.campaigns.push(c);
+    nameEl.value=''; budgetEl.value='';
+    saveData();
+    renderManageList();
+    render();
+    showToast('Campaign added');
+  }
+  function editCampaign(id){
+    const c = data.campaigns.find(x=>x.id===id);
+    if(!c) return;
+    const newName = prompt('Campaign name:', c.name);
+    if(newName===null) return;
+    c.name = newName.trim() || c.name;
+    saveData();
+    render();
+  }
+  function deleteCampaign(id){
+    const c = data.campaigns.find(x=>x.id===id);
+    if(!c) return;
+    if(!confirm(`Delete "${c.name}"? This also removes its spend history.`)) return;
+    data.campaigns = data.campaigns.filter(x=>x.id!==id);
+    delete data.history[id];
+    saveData();
+    renderManageList();
+    render();
+  }
+
+  // ---------- CSV upload ----------
+  function openUpload(){
+    const sel = document.getElementById('uploadAccount');
+    sel.innerHTML = data.accounts.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+    document.getElementById('uploadDate').value = new Date().toISOString().slice(0,10);
+    document.getElementById('uploadPaste').value = '';
+    document.getElementById('parsePreview').innerHTML = '';
+    document.getElementById('btnConfirmUpload').style.display = 'none';
+    document.getElementById('uploadFile').value = '';
+    pendingParsed = null;
+    document.getElementById('uploadOverlay').classList.add('active');
+  }
+
+  function parseCSVText(text){
+    // strip BOM, split lines, drop blank lines
+    const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim().length);
+    if(!lines.length) return [];
+    // find header row containing something like "campaign"
+    let headerIdx = lines.findIndex(l => /campaign/i.test(l));
+    if(headerIdx === -1) headerIdx = 0;
+    const headerCols = splitCSVLine(lines[headerIdx]);
+    const campIdx = headerCols.findIndex(h => /campaign/i.test(h));
+    const costIdx = headerCols.findIndex(h => /cost/i.test(h));
+    if(campIdx === -1 || costIdx === -1) return [];
+    const rows = [];
+    for(let i=headerIdx+1; i<lines.length; i++){
+      const cols = splitCSVLine(lines[i]);
+      if(cols.length <= Math.max(campIdx,costIdx)) continue;
+      const name = (cols[campIdx]||'').trim();
+      if(!name || /^total/i.test(name)) continue;
+      const costRaw = (cols[costIdx]||'').replace(/[^0-9.\-]/g,'');
+      const cost = parseFloat(costRaw);
+      if(!name || isNaN(cost)) continue;
+      rows.push({name, cost});
+    }
+    return rows;
+  }
+  function splitCSVLine(line){
+    // basic CSV split honoring quoted fields
+    const out = []; let cur=''; let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const ch = line[i];
+      if(ch === '"'){ inQ = !inQ; continue; }
+      if(ch === ',' && !inQ){ out.push(cur); cur=''; continue; }
+      cur += ch;
+    }
+    out.push(cur);
+    return out;
+  }
+
+  function handleParse(){
+    const fileInput = document.getElementById('uploadFile');
+    const pasteText = document.getElementById('uploadPaste').value;
+    if(fileInput.files && fileInput.files[0]){
+      const reader = new FileReader();
+      reader.onload = e => runParse(e.target.result);
+      reader.onerror = () => showToast('Could not read file');
+      reader.readAsText(fileInput.files[0]);
+    } else if(pasteText.trim()){
+      runParse(pasteText);
+    } else {
+      showToast('Choose a file or paste CSV text first');
+    }
+  }
+
+  function runParse(text){
+    const rows = parseCSVText(text);
+    if(!rows.length){
+      document.getElementById('parsePreview').innerHTML = `<div class="hint">Couldn't find Campaign / Cost columns. Check the export format.</div>`;
+      return;
+    }
+    const account = document.getElementById('uploadAccount').value;
+    const existing = data.campaigns.filter(c=>c.account===account);
+    const matched = [];
+    rows.forEach(r=>{
+      const norm = r.name.trim().toLowerCase();
+      let match = existing.find(c=>c.name.trim().toLowerCase()===norm);
+      if(!match) match = existing.find(c=>c.name.trim().toLowerCase().includes(norm) || norm.includes(c.name.trim().toLowerCase()));
+      matched.push({row:r, match});
+    });
+    pendingParsed = { account, date: document.getElementById('uploadDate').value, matched };
+
+    const tableRows = matched.map(m=>`
+      <tr>
+        <td>${escapeHtml(m.row.name)}</td>
+        <td>${fmtMoney(m.row.cost)}</td>
+        <td><span class="match-tag ${m.match?'matched':'new'}">${m.match ? 'matched: '+escapeHtml(m.match.name) : 'new campaign'}</span></td>
+      </tr>`).join('');
+    document.getElementById('parsePreview').innerHTML = `
+      <table class="match-table">
+        <thead><tr><th>CSV row</th><th>Cost</th><th>Match</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+      <div class="hint">Rows marked "new campaign" will be created under ${escapeHtml(account)} with today's cost as the first data point (set a budget afterwards in Manage campaigns).</div>
+    `;
+    document.getElementById('btnConfirmUpload').style.display = '';
+  }
+
+  function confirmUpload(){
+    if(!pendingParsed) return;
+    const {account, date, matched} = pendingParsed;
+    matched.forEach(m=>{
+      let campaign = m.match;
+      if(!campaign){
+        campaign = { id: uid(), name: m.row.name.trim(), account, budgets: {} };
+        data.campaigns.push(campaign);
+      }
+      if(!data.history[campaign.id]) data.history[campaign.id] = [];
+      const hist = data.history[campaign.id];
+      const idx = hist.findIndex(e=>e.date===date);
+      if(idx>=0) hist[idx].spend = m.row.cost;
+      else hist.push({date, spend: m.row.cost});
+    });
+    saveData();
+    render();
+    document.getElementById('uploadOverlay').classList.remove('active');
+    showToast(`Saved ${matched.length} rows for ${date}`);
+  }
+
+  // ---------- wiring ----------
+  function wireEvents(){
+    document.getElementById('monthPicker').addEventListener('change', e=>{
+      selectedMonth = e.target.value;
+      render();
+    });
+    document.getElementById('btnRefresh').addEventListener('click', refreshFromServer);
+    window.addEventListener('focus', refreshFromServer);
+    document.getElementById('btnUpload').addEventListener('click', openUpload);
+    document.getElementById('btnManage').addEventListener('click', openManage);
+    document.getElementById('btnParse').addEventListener('click', handleParse);
+    document.getElementById('btnConfirmUpload').addEventListener('click', confirmUpload);
+    document.getElementById('btnAddCampaign').addEventListener('click', addCampaign);
+    document.querySelectorAll('[data-close]').forEach(btn=>{
+      btn.addEventListener('click', ()=> document.getElementById(btn.dataset.close).classList.remove('active'));
+    });
+    document.querySelectorAll('.overlay').forEach(ov=>{
+      ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('active'); });
+    });
+  }
+
+  // expose for inline handlers
+  window.PacingApp = { toggleAccount, editCampaign, deleteCampaign, switchManageTab, updateBudget };
+
+  // ---------- init ----------
+  (async function init(){
+    const principal = await checkAuth();
+    if(!principal) return; // redirecting to login
+    try{
+      await loadData();
+    }catch(e){
+      if(e.message === 'not-authorized') return; // auth gate is already showing
+      throw e;
+    }
+    wireEvents();
+    render();
+  })();
+})();
+</script>
+</body>
+</html>

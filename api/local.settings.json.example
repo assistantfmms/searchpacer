@@ -1,0 +1,9 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "TRACKER_STORAGE_CONNECTION": "<your Azure Storage account connection string>",
+    "ALLOWED_EMAILS": "phil.mumford@jimselectrical.com.au,cameron@fmms.com.au"
+  }
+}
