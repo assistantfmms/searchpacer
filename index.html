@@ -227,7 +227,6 @@
       </div>
       <span class="asof" id="asOfLabel"></span>
       <button id="btnRefresh" class="ghost" title="Reload latest data from the server">⟳ Refresh</button>
-      <button id="btnUpload" class="primary">Upload CSV</button>
       <button id="btnManage" class="ghost">Manage campaigns</button>
     </div>
   </header>
@@ -248,43 +247,6 @@
 
   <section id="accountsWrap"></section>
 
-</div>
-
-<!-- Upload Modal -->
-<div class="overlay" id="uploadOverlay">
-  <div class="modal">
-    <div class="modal-head">
-      <h2>Upload spend data</h2>
-      <button class="icon-btn" data-close="uploadOverlay">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="field-row">
-        <div class="field">
-          <label>Account</label>
-          <select id="uploadAccount"></select>
-        </div>
-        <div class="field">
-          <label>As-of date (from export)</label>
-          <input type="date" id="uploadDate">
-        </div>
-      </div>
-      <div class="field">
-        <label>CSV file from Google Ads</label>
-        <input type="file" id="uploadFile" accept=".csv,text/csv">
-        <div class="hint">Export a "Campaign" report with Cost as month-to-date, one row per campaign. Or paste the CSV text below instead.</div>
-      </div>
-      <div class="field">
-        <label>...or paste CSV text</label>
-        <textarea id="uploadPaste" placeholder="Campaign,Cost&#10;Adelaide Search,4231.50&#10;Perth Search,1899.00"></textarea>
-      </div>
-      <button id="btnParse">Parse data</button>
-      <div id="parsePreview"></div>
-    </div>
-    <div class="modal-foot">
-      <button class="ghost" data-close="uploadOverlay">Cancel</button>
-      <button class="primary" id="btnConfirmUpload" style="display:none;">Confirm & save</button>
-    </div>
-  </div>
 </div>
 
 <!-- Manage Modal -->
@@ -328,7 +290,6 @@
   let collapsedAccounts = {};
   let selectedMonth = monthKeyOf(new Date());
   let activeManageAccount = null;
-  let pendingParsed = null;      // rows staged from the upload parser
 
   // ---------- auth ----------
   async function checkAuth(){
@@ -698,125 +659,6 @@
     render();
   }
 
-  // ---------- CSV upload ----------
-  function openUpload(){
-    const sel = document.getElementById('uploadAccount');
-    sel.innerHTML = data.accounts.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
-    document.getElementById('uploadDate').value = new Date().toISOString().slice(0,10);
-    document.getElementById('uploadPaste').value = '';
-    document.getElementById('parsePreview').innerHTML = '';
-    document.getElementById('btnConfirmUpload').style.display = 'none';
-    document.getElementById('uploadFile').value = '';
-    pendingParsed = null;
-    document.getElementById('uploadOverlay').classList.add('active');
-  }
-
-  function parseCSVText(text){
-    // strip BOM, split lines, drop blank lines
-    const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim().length);
-    if(!lines.length) return [];
-    // find header row containing something like "campaign"
-    let headerIdx = lines.findIndex(l => /campaign/i.test(l));
-    if(headerIdx === -1) headerIdx = 0;
-    const headerCols = splitCSVLine(lines[headerIdx]);
-    const campIdx = headerCols.findIndex(h => /campaign/i.test(h));
-    const costIdx = headerCols.findIndex(h => /cost/i.test(h));
-    if(campIdx === -1 || costIdx === -1) return [];
-    const rows = [];
-    for(let i=headerIdx+1; i<lines.length; i++){
-      const cols = splitCSVLine(lines[i]);
-      if(cols.length <= Math.max(campIdx,costIdx)) continue;
-      const name = (cols[campIdx]||'').trim();
-      if(!name || /^total/i.test(name)) continue;
-      const costRaw = (cols[costIdx]||'').replace(/[^0-9.\-]/g,'');
-      const cost = parseFloat(costRaw);
-      if(!name || isNaN(cost)) continue;
-      rows.push({name, cost});
-    }
-    return rows;
-  }
-  function splitCSVLine(line){
-    // basic CSV split honoring quoted fields
-    const out = []; let cur=''; let inQ=false;
-    for(let i=0;i<line.length;i++){
-      const ch = line[i];
-      if(ch === '"'){ inQ = !inQ; continue; }
-      if(ch === ',' && !inQ){ out.push(cur); cur=''; continue; }
-      cur += ch;
-    }
-    out.push(cur);
-    return out;
-  }
-
-  function handleParse(){
-    const fileInput = document.getElementById('uploadFile');
-    const pasteText = document.getElementById('uploadPaste').value;
-    if(fileInput.files && fileInput.files[0]){
-      const reader = new FileReader();
-      reader.onload = e => runParse(e.target.result);
-      reader.onerror = () => showToast('Could not read file');
-      reader.readAsText(fileInput.files[0]);
-    } else if(pasteText.trim()){
-      runParse(pasteText);
-    } else {
-      showToast('Choose a file or paste CSV text first');
-    }
-  }
-
-  function runParse(text){
-    const rows = parseCSVText(text);
-    if(!rows.length){
-      document.getElementById('parsePreview').innerHTML = `<div class="hint">Couldn't find Campaign / Cost columns. Check the export format.</div>`;
-      return;
-    }
-    const account = document.getElementById('uploadAccount').value;
-    const existing = data.campaigns.filter(c=>c.account===account);
-    const matched = [];
-    rows.forEach(r=>{
-      const norm = r.name.trim().toLowerCase();
-      let match = existing.find(c=>c.name.trim().toLowerCase()===norm);
-      if(!match) match = existing.find(c=>c.name.trim().toLowerCase().includes(norm) || norm.includes(c.name.trim().toLowerCase()));
-      matched.push({row:r, match});
-    });
-    pendingParsed = { account, date: document.getElementById('uploadDate').value, matched };
-
-    const tableRows = matched.map(m=>`
-      <tr>
-        <td>${escapeHtml(m.row.name)}</td>
-        <td>${fmtMoney(m.row.cost)}</td>
-        <td><span class="match-tag ${m.match?'matched':'new'}">${m.match ? 'matched: '+escapeHtml(m.match.name) : 'new campaign'}</span></td>
-      </tr>`).join('');
-    document.getElementById('parsePreview').innerHTML = `
-      <table class="match-table">
-        <thead><tr><th>CSV row</th><th>Cost</th><th>Match</th></tr></thead>
-        <tbody>${tableRows}</tbody>
-      </table>
-      <div class="hint">Rows marked "new campaign" will be created under ${escapeHtml(account)} with today's cost as the first data point (set a daily budget afterwards in Manage campaigns).</div>
-    `;
-    document.getElementById('btnConfirmUpload').style.display = '';
-  }
-
-  function confirmUpload(){
-    if(!pendingParsed) return;
-    const {account, date, matched} = pendingParsed;
-    matched.forEach(m=>{
-      let campaign = m.match;
-      if(!campaign){
-        campaign = { id: uid(), name: m.row.name.trim(), account, budgets: {} };
-        data.campaigns.push(campaign);
-      }
-      if(!data.history[campaign.id]) data.history[campaign.id] = [];
-      const hist = data.history[campaign.id];
-      const idx = hist.findIndex(e=>e.date===date);
-      if(idx>=0) hist[idx].spend = m.row.cost;
-      else hist.push({date, spend: m.row.cost});
-    });
-    saveData();
-    render();
-    document.getElementById('uploadOverlay').classList.remove('active');
-    showToast(`Saved ${matched.length} rows for ${date}`);
-  }
-
   // ---------- wiring ----------
   function wireEvents(){
     document.getElementById('monthPicker').addEventListener('change', e=>{
@@ -825,10 +667,7 @@
     });
     document.getElementById('btnRefresh').addEventListener('click', refreshFromServer);
     window.addEventListener('focus', refreshFromServer);
-    document.getElementById('btnUpload').addEventListener('click', openUpload);
     document.getElementById('btnManage').addEventListener('click', openManage);
-    document.getElementById('btnParse').addEventListener('click', handleParse);
-    document.getElementById('btnConfirmUpload').addEventListener('click', confirmUpload);
     document.getElementById('btnAddCampaign').addEventListener('click', addCampaign);
     document.querySelectorAll('[data-close]').forEach(btn=>{
       btn.addEventListener('click', ()=> document.getElementById(btn.dataset.close).classList.remove('active'));
