@@ -456,9 +456,13 @@
 
   function classify(pace){
     if(pace === null) return 'no-data';
-    if(pace >= 0.9 && pace <= 1.10) return 'on-pace';
-    if((pace > 1.10 && pace <= 1.25) || (pace < 0.9 && pace >= 0.75)) return 'watch';
-    return 'off-pace';
+    if(pace > 1.0) return 'off-pace';   // labeled "Warning" — spending ahead of where it should be
+    if(pace >= 0.9) return 'on-pace';   // 90-100% of expected — on target
+    return 'watch';                    // under 90% — underspending
+  }
+
+  function statusLabel(status){
+    return { 'on-pace':'On pace', 'watch':'Watch', 'off-pace':'Warning', 'no-data':'No data' }[status] || status;
   }
 
   const GOOGLE_DAYS_PER_MONTH = 30.4; // Google Ads' average-days-per-month constant for monthly spend caps
@@ -516,13 +520,13 @@
         <div class="value">${fmtMoney(totalSpend)}</div>
         <div class="sub">should be ~${fmtMoney(totalExpected)} by now</div>
       </div>
-      <div class="kpi ${overallPace!==null && overallPace>1.1 ? 'warn':''}">
+      <div class="kpi ${overallPace!==null && overallPace>1.0 ? 'warn':''}">
         <div class="label">Projected Month-End</div>
         <div class="value">${fmtMoney(totalProjected)}</div>
         <div class="sub">${totalCap>0 ? (totalProjected>totalCap? '+'+fmtMoney(totalProjected-totalCap)+' over cap' : fmtMoney(totalCap-totalProjected)+' under cap') : '—'}</div>
       </div>
       <div class="kpi ${offCount>0?'bad':''}">
-        <div class="label">Off Pace</div>
+        <div class="label">Warnings</div>
         <div class="value">${offCount}</div>
         <div class="sub">of ${data.campaigns.length} campaigns</div>
       </div>
@@ -573,7 +577,7 @@
               </div>
             </td>
             <td class="num">${fmtMoney(s.projected)}</td>
-            <td><span class="badge ${s.status}">${s.status.replace('-',' ')}</span></td>
+            <td><span class="badge ${s.status}">${statusLabel(s.status)}</span></td>
             <td class="row-actions">
               <button class="icon-btn" onclick="PacingApp.editCampaign('${c.id}')" title="Edit">✎</button>
               <button class="icon-btn" onclick="PacingApp.deleteCampaign('${c.id}')" title="Delete">🗑</button>
