@@ -294,7 +294,13 @@
   // ---------- auth ----------
   async function checkAuth(){
     try{
-      const res = await fetch('/.auth/me');
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000); // don't hang forever
+      const res = await fetch('/.auth/me', { signal: controller.signal });
+      clearTimeout(timeout);
+      if(!res.ok){
+        throw new Error('Auth endpoint returned ' + res.status);
+      }
       const info = await res.json();
       const principal = info && info.clientPrincipal;
       if(!principal){
@@ -304,6 +310,9 @@
       document.getElementById('userLabel').textContent = principal.userDetails;
       return principal;
     }catch(e){
+      console.error('Auth check failed', e);
+      document.getElementById('userLabel').textContent = 'Sign-in check failed — reload the page, or try a different browser/network.';
+      document.getElementById('userBar').style.color = 'var(--off)';
       return null;
     }
   }
