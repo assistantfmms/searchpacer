@@ -57,20 +57,36 @@ app.http('ingest', {
     if (!store.history) store.history = {};
     if (!store.accounts.includes(account)) store.accounts.push(account);
 
-    let matched = 0, created = 0, skipped = 0;
+    let matched = 0, created = 0, renamed = 0, skipped = 0;
     rows.forEach(r => {
       const name = (r.name || '').toString().trim();
       const cost = Number(r.cost);
+      const googleAdsId = r.id ? String(r.id).trim() : null;
       if (!name || isNaN(cost)) { skipped++; return; }
       const norm = name.toLowerCase();
-      let campaign = store.campaigns.find(c => c.account === account && c.name.trim().toLowerCase() === norm);
+
+      // 1. Match by Google Ads' permanent campaign ID first — this survives renames.
+      let campaign = googleAdsId
+        ? store.campaigns.find(c => c.account === account && c.googleAdsId === googleAdsId)
+        : null;
+
+      // 2. Fall back to matching by name, but only against campaigns not already linked
+      //    to a different ID (covers campaigns added manually, or from before this ID
+      //    tracking existed — they'll get linked to their ID automatically below).
       if (!campaign) {
-        campaign = { id: uid(), name, account, budgets: {} };
+        campaign = store.campaigns.find(c => c.account === account && !c.googleAdsId && c.name.trim().toLowerCase() === norm);
+      }
+
+      if (campaign) {
+        matched++;
+        if (googleAdsId && !campaign.googleAdsId) campaign.googleAdsId = googleAdsId;
+        if (campaign.name.trim().toLowerCase() !== norm) { campaign.name = name; renamed++; }
+      } else {
+        campaign = { id: uid(), name, account, budgets: {}, googleAdsId };
         store.campaigns.push(campaign);
         created++;
-      } else {
-        matched++;
       }
+
       if (!store.history[campaign.id]) store.history[campaign.id] = [];
       const hist = store.history[campaign.id];
       const idx = hist.findIndex(e => e.date === date);
@@ -89,6 +105,6 @@ app.http('ingest', {
       'Replace'
     );
 
-    return { status: 200, jsonBody: { ok: true, matched, created, skipped } };
+    return { status: 200, jsonBody: { ok: true, matched, created, renamed, skipped } };
   }
 });
