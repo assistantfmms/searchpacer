@@ -521,10 +521,10 @@
     wrap.innerHTML = data.accounts.map(acct=>{
       const campaigns = data.campaigns.filter(c=>c.account===acct);
       if(!campaigns.length) return '';
-      let accCap=0, accSpend=0;
+      let accCap=0, accSpend=0, accProjected=0;
       const rows = campaigns.map(c=>{
         const s = campaignStats(c, selectedMonth, asOfDay);
-        accCap += s.monthlyCap; accSpend += s.spend;
+        accCap += s.monthlyCap; accSpend += s.spend; accProjected += (s.projected||0);
         const fillPct = s.monthlyCap>0 ? Math.min(s.spend/s.monthlyCap,1)*100 : 0;
         const overBadge = s.monthlyCap>0 && s.spend > s.monthlyCap ? `<span class="badge off-pace" style="margin-left:6px;">+${fmtMoney(s.spend-s.monthlyCap)} over cap</span>` : '';
         return `
@@ -563,6 +563,7 @@
             <div class="account-totals">
               <span>Cap <b>${fmtMoney(accCap)}</b></span>
               <span>Spent <b>${fmtMoney(accSpend)}</b></span>
+              <span>Projected <b>${fmtMoney(accProjected)}</b></span>
             </div>
           </div>
           <table class="campaign-table">
