@@ -3,6 +3,7 @@
     { "route": "/.auth/login/github", "statusCode": 404 },
     { "route": "/.auth/login/twitter", "statusCode": 404 },
     { "route": "/api/ingest", "allowedRoles": ["anonymous"] },
+    { "route": "/api/ingest-daily-spend", "allowedRoles": ["anonymous"] },
     { "route": "/api/*", "allowedRoles": ["authenticated"] },
     { "route": "/*", "allowedRoles": ["authenticated"] }
   ],
