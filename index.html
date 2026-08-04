@@ -34,7 +34,7 @@
     font-family:var(--sans); -webkit-font-smoothing:antialiased;
   }
   .app{max-width:1180px; margin:0 auto; padding:28px 20px 80px;}
-
+ 
   /* Header */
   header.top{
     display:flex; align-items:flex-end; justify-content:space-between;
@@ -64,7 +64,7 @@
   button.ghost{background:transparent;}
   button.danger{color:var(--off);}
   .asof{font-family:var(--mono); font-size:11px; color:var(--text-faint);}
-
+ 
   /* KPI row */
   .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:28px;}
   .kpi{
@@ -76,7 +76,7 @@
   .kpi .sub{font-size:11px; color:var(--text-faint); margin-top:4px;}
   .kpi.warn .value{color:var(--watch);}
   .kpi.bad .value{color:var(--off);}
-
+ 
   /* Account groups */
   .account-group{
     background:var(--panel); border:1px solid var(--border-soft); border-radius:var(--radius);
@@ -93,7 +93,7 @@
   .account-head h3{margin:0; font-size:14px; font-weight:600;}
   .account-totals{display:flex; gap:22px; font-family:var(--mono); font-size:12px; color:var(--text-dim);}
   .account-totals b{color:var(--text); font-weight:600;}
-
+ 
   .campaign-table{width:100%; border-collapse:collapse;}
   .account-group.collapsed .campaign-table{display:none;}
   .campaign-table th{
@@ -107,7 +107,7 @@
   .cname .sub{display:block; font-size:11px; color:var(--text-faint); font-family:var(--mono); margin-top:2px;}
   .sched-tag{display:inline-block; margin-left:8px; font-size:10px; font-family:var(--mono); padding:2px 6px; border-radius:4px; background:var(--accent-dim); color:var(--accent); vertical-align:middle;}
   .num{font-family:var(--mono); font-size:12.5px; text-align:right; white-space:nowrap;}
-
+ 
   .pace-cell{width:220px;}
   .pace-track{
     position:relative; height:8px; border-radius:4px; background:var(--border-soft);
@@ -127,7 +127,7 @@
   .pace-pct.on-pace{color:var(--good);}
   .pace-pct.watch{color:var(--watch);}
   .pace-pct.off-pace{color:var(--off);}
-
+ 
   .badge{
     display:inline-block; font-family:var(--mono); font-size:10px; font-weight:700;
     padding:3px 7px; border-radius:5px; text-transform:uppercase; letter-spacing:.04em;
@@ -136,16 +136,16 @@
   .badge.watch{background:var(--watch-dim); color:var(--watch);}
   .badge.off-pace{background:var(--off-dim); color:var(--off);}
   .badge.no-data{background:var(--border-soft); color:var(--text-faint);}
-
+ 
   .row-actions{display:flex; gap:6px; justify-content:flex-end;}
   .icon-btn{
     background:none; border:none; color:var(--text-faint); cursor:pointer; font-size:14px; padding:4px 6px;
   }
   .icon-btn:hover{color:var(--text);}
-
+ 
   .empty-state{padding:40px 18px; text-align:center; color:var(--text-faint); font-size:13px;}
   .empty-state button{margin-top:12px;}
-
+ 
   /* Modals */
   .overlay{
     position:fixed; inset:0; background:rgba(4,6,8,0.7); display:none;
@@ -173,28 +173,37 @@
   .field-row{display:flex; gap:10px;}
   .field-row .field{flex:1;}
   .hint{font-size:11px; color:var(--text-faint); margin-top:4px; line-height:1.5;}
-
+ 
   .campaign-list-item{
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
-    padding:10px 0; border-bottom:1px solid var(--border-soft);
+    display:flex; flex-direction:column; gap:8px;
+    padding:12px 0; border-bottom:1px solid var(--border-soft);
   }
   .campaign-list-item:last-child{border-bottom:none;}
-  .campaign-list-item .info{flex:1;}
+  .clr-top{display:flex; align-items:center; gap:10px;}
+  .campaign-list-item .info{flex:1; min-width:0;}
   .campaign-list-item .info .n{font-size:13px; font-weight:500;}
-  .campaign-list-item .info .a{font-size:11px; color:var(--text-faint); font-family:var(--mono);}
+  .campaign-list-item .info .a{font-size:11px; color:var(--text-faint); font-family:var(--mono); line-height:1.5;}
   .campaign-list-item .budget-input{width:110px;}
-
+  .day-toggles{display:flex; gap:5px;}
+  .day-btn{
+    width:28px; height:28px; border-radius:6px; border:1px solid var(--border);
+    background:var(--panel-2); color:var(--text-faint); font-family:var(--mono); font-size:12px;
+    font-weight:600; cursor:pointer; transition:all .12s;
+  }
+  .day-btn:hover{border-color:var(--accent);}
+  .day-btn.active{background:var(--accent); border-color:var(--accent); color:#04141f;}
+ 
   .match-table{width:100%; font-size:12px; border-collapse:collapse; margin-top:10px;}
   .match-table th{text-align:left; color:var(--text-faint); font-size:10px; text-transform:uppercase; padding:6px 8px;}
   .match-table td{padding:6px 8px; border-top:1px solid var(--border-soft); font-family:var(--mono);}
   .match-tag{font-family:var(--sans); font-size:10px; padding:2px 6px; border-radius:4px; font-weight:600;}
   .match-tag.matched{background:var(--good-dim); color:var(--good);}
   .match-tag.new{background:var(--accent-dim); color:var(--accent);}
-
+ 
   .tabs{display:flex; gap:4px; margin-bottom:16px; background:var(--panel-2); border-radius:8px; padding:4px;}
   .tab{flex:1; text-align:center; padding:7px 0; font-size:12px; font-weight:600; border-radius:6px; cursor:pointer; color:var(--text-dim);}
   .tab.active{background:var(--panel); color:var(--text);}
-
+ 
   .toast{
     position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
     background:var(--panel-2); border:1px solid var(--border); color:var(--text);
@@ -202,7 +211,7 @@
     opacity:0; pointer-events:none; transition:opacity .2s;
   }
   .toast.show{opacity:1;}
-
+ 
   @media (max-width:720px){
     .kpis{grid-template-columns:repeat(2,1fr);}
     .pace-cell{width:140px;}
@@ -215,7 +224,7 @@
 </head>
 <body>
 <div class="app">
-
+ 
   <header class="top">
     <div class="brand">
       <span class="eyebrow">Google Ads &middot; Multi-account</span>
@@ -231,25 +240,25 @@
       <button id="btnManage" class="ghost">Manage campaigns</button>
     </div>
   </header>
-
+ 
   <div id="userBar" style="display:flex; justify-content:flex-end; align-items:center; gap:10px; margin:-12px 0 20px; font-size:11px; color:var(--text-faint); font-family:var(--mono);">
     <span id="userLabel">checking sign-in…</span>
     <a href="/.auth/logout" style="color:var(--text-faint);">sign out</a>
   </div>
-
+ 
   <div id="authGate" style="display:none;" class="account-group">
     <div class="empty-state">
       <div id="authGateMessage">You're signed in, but this email isn't on the access list for the tracker.</div>
       <div class="hint" id="authGateEmail" style="margin-top:8px;"></div>
     </div>
   </div>
-
+ 
   <section class="kpis" id="kpiRow"></section>
-
+ 
   <section id="accountsWrap"></section>
-
+ 
 </div>
-
+ 
 <!-- Manage Modal -->
 <div class="overlay" id="manageOverlay">
   <div class="modal">
@@ -270,15 +279,8 @@
           <label>Daily budget</label>
           <input type="number" id="newCampaignBudget" placeholder="0">
         </div>
-        <div class="field">
-          <label>Runs</label>
-          <select id="newCampaignSchedule">
-            <option value="daily">Every day</option>
-            <option value="weekdays">Weekdays only</option>
-          </select>
-        </div>
       </div>
-      <div class="hint" style="margin:-8px 0 12px;">The daily budget set in Google Ads for this campaign — the tracker works out the monthly cap and pacing from this (daily × 30.4 for every-day campaigns, or daily × actual weekdays for weekday-only ones).</div>
+      <div class="hint" style="margin:-8px 0 12px;">The daily budget set in Google Ads for this campaign — the tracker works out the monthly cap and pacing from this. New campaigns default to running every day; set which days it actually runs afterward, in the list above.</div>
       <button id="btnAddCampaign" class="primary">Add to <span id="addToAccountLabel"></span></button>
     </div>
     <div class="modal-foot">
@@ -286,19 +288,19 @@
     </div>
   </div>
 </div>
-
+ 
 <div class="toast" id="toast"></div>
-
+ 
 <script>
 (function(){
   const STORAGE_KEY = 'pacing-tracker-data';
   const DEFAULT_ACCOUNTS = ["Jim's Electrical","Jim's Energy","Jim's Antennas","Jim's Security"];
-
+ 
   let data = null;               // { accounts:[], campaigns:[{id,name,account,budgets:{}}], history:{ [id]:[{date,spend}] } }
   let collapsedAccounts = {};
   let selectedMonth = monthKeyOf(new Date());
   let activeManageAccount = null;
-
+ 
   // ---------- auth ----------
   async function checkAuth(){
     try{
@@ -324,7 +326,7 @@
       return null;
     }
   }
-
+ 
   // ---------- storage (shared, via API) ----------
   async function loadData(){
     let res;
@@ -347,7 +349,7 @@
     data = body || { accounts: DEFAULT_ACCOUNTS.slice(), campaigns: [], history: {} };
     if(!data.accounts || !data.accounts.length) data.accounts = DEFAULT_ACCOUNTS.slice();
   }
-
+ 
   async function saveData(){
     try{
       const res = await fetch('/api/data', {
@@ -363,7 +365,7 @@
       console.error(e);
     }
   }
-
+ 
   async function refreshFromServer(){
     try{
       const res = await fetch('/api/data');
@@ -377,7 +379,7 @@
       }
     }catch(e){ /* ignore transient network errors */ }
   }
-
+ 
   // ---------- helpers ----------
   function uid(){ return 'c_' + Math.random().toString(36).slice(2,10); }
   function monthKeyOf(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
@@ -399,7 +401,7 @@
     t.classList.add('show');
     setTimeout(()=>t.classList.remove('show'), 2600);
   }
-
+ 
   function getBudgetForMonth(campaign, monthKey){
     if(!campaign.budgets) return 0;
     if(campaign.budgets[monthKey] !== undefined) return campaign.budgets[monthKey];
@@ -408,14 +410,14 @@
     if(keys.length) return campaign.budgets[keys[keys.length-1]];
     return 0;
   }
-
+ 
   function getLatestSpend(campaignId, monthKey){
     const hist = (data.history[campaignId] || []).filter(e => e.date.slice(0,7) === monthKey);
     if(!hist.length) return {spend:0, date:null};
     hist.sort((a,b)=> a.date < b.date ? 1 : -1);
     return {spend: hist[0].spend, date: hist[0].date};
   }
-
+ 
   function computeAsOfDay(monthKey){
     const now = new Date();
     const curKey = monthKeyOf(now);
@@ -431,67 +433,85 @@
     });
     return maxDay || now.getDate();
   }
-
+ 
   function classify(pace){
     if(pace === null) return 'no-data';
     if(pace > 1.0) return 'off-pace';   // labeled "Warning" — spending ahead of where it should be
     if(pace >= 0.9) return 'on-pace';   // 90-100% of expected — on target
     return 'watch';                    // under 90% — underspending
   }
-
+ 
   function statusLabel(status){
     return { 'on-pace':'On pace', 'watch':'Watch', 'off-pace':'Warning', 'no-data':'No data' }[status] || status;
   }
-
+ 
   const GOOGLE_DAYS_PER_MONTH = 30.4; // Google Ads' average-days-per-month constant for monthly spend caps
-
-  // Counts how many days from day 1 through endDay (inclusive) match a campaign's schedule.
-  // 'daily' counts every day; 'weekdays' excludes Saturdays and Sundays.
-  function countRunDays(monthKey, endDay, schedule){
+ 
+  // Day order for display (Mon..Sun) and the JS Date.getDay() value each maps to.
+  const DAY_LABELS = ['M','T','W','T','F','S','S'];
+  const DAY_ORDER  = [1,2,3,4,5,6,0]; // Mon=1 ... Sat=6, Sun=0 (matches Date.getDay())
+ 
+  // Returns the campaign's active days as an array of Date.getDay() values (0=Sun..6=Sat).
+  // Falls back sensibly for campaigns saved before per-day selection existed.
+  function getRunDays(campaign){
+    if(Array.isArray(campaign.runDays) && campaign.runDays.length) return campaign.runDays;
+    if(campaign.schedule === 'weekdays') return [1,2,3,4,5]; // old "weekdays only" campaigns
+    return DAY_ORDER.slice(); // default: every day
+  }
+ 
+  // A short label for the campaign row, e.g. "Mon–Fri", "M W F", or null if it runs every day.
+  function formatRunDaysLabel(runDays){
+    if(!runDays || runDays.length === 7) return null;
+    const set = new Set(runDays);
+    if(runDays.length === 5 && [1,2,3,4,5].every(d=>set.has(d))) return 'Mon\u2013Fri';
+    if(runDays.length === 2 && set.has(0) && set.has(6)) return 'Sat\u2013Sun';
+    return DAY_ORDER.filter(d=>set.has(d)).map(d=>DAY_LABELS[DAY_ORDER.indexOf(d)]).join(' ');
+  }
+ 
+  // Counts how many days from day 1 through endDay (inclusive) fall on one of runDays.
+  function countRunDays(monthKey, endDay, runDays){
     if(endDay <= 0) return 0;
-    if(schedule !== 'weekdays') return endDay;
+    if(!runDays || runDays.length === 7) return endDay; // every day active — fast path
+    const set = new Set(runDays);
     const [y,m] = monthKey.split('-').map(Number);
     let count = 0;
     for(let d=1; d<=endDay; d++){
-      const dow = new Date(y, m-1, d).getDay(); // 0=Sun .. 6=Sat
-      if(dow !== 0 && dow !== 6) count++;
+      if(set.has(new Date(y, m-1, d).getDay())) count++;
     }
     return count;
   }
-
+ 
   function campaignStats(campaign, monthKey, asOfDay){
     const dim = daysInMonth(monthKey);
-    const schedule = campaign.schedule === 'weekdays' ? 'weekdays' : 'daily';
+    const runDays = getRunDays(campaign);
     const dailyBudget = getBudgetForMonth(campaign, monthKey);
-    const runDaysInMonth = countRunDays(monthKey, dim, schedule);
-    const runDaysElapsed = countRunDays(monthKey, asOfDay, schedule);
+    const runDaysInMonth = countRunDays(monthKey, dim, runDays);
+    const runDaysElapsed = countRunDays(monthKey, asOfDay, runDays);
     // Google's real monthly delivery cap is ALWAYS daily budget × 30.4, regardless of ad
-    // scheduling — Google does not reduce this ceiling for a weekdays-only campaign. That's
+    // scheduling — Google does not reduce this ceiling for a restricted-day campaign. That's
     // exactly the risk this tool needs to surface: with fewer active days to spend the same
     // 30.4-day-equivalent total, Google can (and will) push spend well above the nominal daily
-    // budget on the days a weekday-only campaign IS active, to still reach that monthly figure.
+    // budget on the days a restricted-schedule campaign IS active, to still reach that figure.
     const monthlyCap = dailyBudget * GOOGLE_DAYS_PER_MONTH;
     const {spend, date} = getLatestSpend(campaign.id, monthKey);
-    // "where it should be tracking": daily budget × applicable days elapsed, so weekends don't
-    // count against a campaign that was never scheduled to spend on them.
+    // "where it should be tracking": daily budget × applicable days elapsed, so days the
+    // campaign was never scheduled to run on don't count against it.
     const expected = runDaysElapsed > 0 ? dailyBudget * runDaysElapsed : 0;
     const pace = expected > 0 ? spend/expected : (spend > 0 ? Infinity : null);
     const projected = runDaysElapsed > 0 ? (spend/runDaysElapsed) * runDaysInMonth : null;
     const status = classify(pace);
     // Where the pace bar's "as of today" marker sits, as a % along the monthly-cap-width track.
-    // Always expressed relative to monthlyCap (the track's own scale) so it lines up correctly
-    // whether that cap was computed via the 30.4 constant (daily) or actual run-days (weekdays).
     const markerPct = monthlyCap > 0 ? Math.min((expected/monthlyCap)*100, 100) : 0;
-    return {dailyBudget, monthlyCap, spend, date, expected, pace, projected, status, dim, schedule, runDaysInMonth, runDaysElapsed, markerPct};
+    return {dailyBudget, monthlyCap, spend, date, expected, pace, projected, status, dim, runDays, runDaysInMonth, runDaysElapsed, markerPct};
   }
-
+ 
   // ---------- rendering ----------
   function render(){
     renderMonthPicker();
     renderKPIs();
     renderAccounts();
   }
-
+ 
   function renderMonthPicker(){
     const picker = document.getElementById('monthPicker');
     picker.value = selectedMonth;
@@ -500,7 +520,7 @@
     document.getElementById('asOfLabel').textContent =
       asOfDay > 0 ? `data as of day ${asOfDay} of ${dim}` : 'no data yet this month';
   }
-
+ 
   function renderKPIs(){
     const asOfDay = computeAsOfDay(selectedMonth);
     let totalCap=0, totalSpend=0, totalExpected=0, totalProjected=0, offCount=0;
@@ -537,12 +557,12 @@
       </div>
     `;
   }
-
+ 
   function renderAccounts(){
     const asOfDay = computeAsOfDay(selectedMonth);
     const dim = daysInMonth(selectedMonth);
     const wrap = document.getElementById('accountsWrap');
-
+ 
     if(data.campaigns.length === 0){
       wrap.innerHTML = `<div class="account-group"><div class="empty-state">
         No campaigns yet. Add your campaigns and daily budgets to get started.
@@ -551,7 +571,7 @@
       document.getElementById('emptyAddBtn').onclick = ()=>openManage();
       return;
     }
-
+ 
     wrap.innerHTML = data.accounts.map(acct=>{
       const campaigns = data.campaigns.filter(c=>c.account===acct);
       if(!campaigns.length) return '';
@@ -564,7 +584,7 @@
         return `
           <tr>
             <td>
-              <div class="cname">${escapeHtml(c.name)}${s.schedule==='weekdays' ? '<span class="sched-tag">Mon\u2013Fri</span>' : ''}
+              <div class="cname">${escapeHtml(c.name)}${formatRunDaysLabel(s.runDays) ? `<span class="sched-tag">${formatRunDaysLabel(s.runDays)}</span>` : ''}
                 <span class="sub">${s.date ? 'updated '+s.date : 'no data'}</span>
               </div>
             </td>
@@ -588,7 +608,7 @@
             </td>
           </tr>`;
       }).join('');
-
+ 
       const collapsed = collapsedAccounts[acct] ? 'collapsed' : '';
       return `
         <div class="account-group ${collapsed}" data-acct="${escapeHtml(acct)}">
@@ -610,17 +630,17 @@
         </div>`;
     }).join('');
   }
-
+ 
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   }
-
+ 
   // ---------- account collapse ----------
   function toggleAccount(acct){
     collapsedAccounts[acct] = !collapsedAccounts[acct];
     renderAccounts();
   }
-
+ 
   // ---------- manage campaigns modal ----------
   function openManage(){
     activeManageAccount = data.accounts[0];
@@ -649,35 +669,48 @@
     }
     el.innerHTML = list.map(c=>{
       const daily = getBudgetForMonth(c, selectedMonth);
-      const schedule = c.schedule === 'weekdays' ? 'weekdays' : 'daily';
+      const runDays = getRunDays(c);
       const dim = daysInMonth(selectedMonth);
       const cap = daily * GOOGLE_DAYS_PER_MONTH; // Google's real cap — unaffected by scheduling
-      const runDaysInMonth = countRunDays(selectedMonth, dim, schedule);
-      const effectiveRate = schedule==='weekdays' && runDaysInMonth>0 ? cap/runDaysInMonth : null;
+      const runDaysInMonth = countRunDays(selectedMonth, dim, runDays);
+      const effectiveRate = runDaysInMonth>0 && runDaysInMonth<dim ? cap/runDaysInMonth : null;
       const capLine = effectiveRate!==null
-        ? `daily budget for ${selectedMonth} · cap ${fmtMoney(cap)}/mo · Google can push up to ~${fmtMoney(effectiveRate)}/active day to hit that cap across only ${runDaysInMonth} weekdays`
+        ? `daily budget for ${selectedMonth} · cap ${fmtMoney(cap)}/mo · Google can push up to ~${fmtMoney(effectiveRate)}/active day to hit that cap across only ${runDaysInMonth} active days`
         : `daily budget for ${selectedMonth} · cap ${fmtMoney(cap)}/mo`;
+      const dayBtns = DAY_ORDER.map((dayVal, i) => {
+        const active = runDays.includes(dayVal);
+        return `<button type="button" class="day-btn ${active?'active':''}" onclick="PacingApp.toggleRunDay('${c.id}', ${dayVal})">${DAY_LABELS[i]}</button>`;
+      }).join('');
       return `
         <div class="campaign-list-item">
-          <div class="info">
-            <div class="n">${escapeHtml(c.name)}</div>
-            <div class="a">${capLine}</div>
+          <div class="clr-top">
+            <div class="info">
+              <div class="n">${escapeHtml(c.name)}</div>
+              <div class="a">${capLine}</div>
+            </div>
+            <input type="number" class="budget-input" value="${daily}"
+                   onchange="PacingApp.updateBudget('${c.id}', this.value)">
+            <button class="icon-btn" onclick="PacingApp.deleteCampaign('${c.id}')" title="Delete">🗑</button>
           </div>
-          <select class="budget-input" style="width:118px;" onchange="PacingApp.updateSchedule('${c.id}', this.value)">
-            <option value="daily" ${schedule==='daily'?'selected':''}>Every day</option>
-            <option value="weekdays" ${schedule==='weekdays'?'selected':''}>Weekdays only</option>
-          </select>
-          <input type="number" class="budget-input" value="${daily}"
-                 onchange="PacingApp.updateBudget('${c.id}', this.value)">
-          <button class="icon-btn" onclick="PacingApp.deleteCampaign('${c.id}')" title="Delete">🗑</button>
+          <div class="day-toggles">${dayBtns}</div>
         </div>`;
     }).join('');
   }
-  function updateSchedule(id, val){
+  function toggleRunDay(id, dayValue){
     const c = data.campaigns.find(x=>x.id===id);
     if(!c) return;
-    c.schedule = val === 'weekdays' ? 'weekdays' : 'daily';
+    const days = getRunDays(c).slice();
+    const idx = days.indexOf(dayValue);
+    if(idx>=0){
+      if(days.length===1){ showToast('At least one day must be selected'); return; }
+      days.splice(idx,1);
+    } else {
+      days.push(dayValue);
+    }
+    c.runDays = days;
+    delete c.schedule; // migrate off the old daily/weekdays field once edited
     saveData();
+    renderManageList();
     render();
   }
   function updateBudget(id, val){
@@ -691,14 +724,12 @@
   function addCampaign(){
     const nameEl = document.getElementById('newCampaignName');
     const budgetEl = document.getElementById('newCampaignBudget');
-    const scheduleEl = document.getElementById('newCampaignSchedule');
     const name = nameEl.value.trim();
     if(!name){ showToast('Enter a campaign name'); return; }
-    const schedule = scheduleEl.value === 'weekdays' ? 'weekdays' : 'daily';
-    const c = { id: uid(), name, account: activeManageAccount, budgets: {}, schedule };
+    const c = { id: uid(), name, account: activeManageAccount, budgets: {}, runDays: DAY_ORDER.slice() };
     c.budgets[selectedMonth] = Number(budgetEl.value) || 0;
     data.campaigns.push(c);
-    nameEl.value=''; budgetEl.value=''; scheduleEl.value='daily';
+    nameEl.value=''; budgetEl.value='';
     saveData();
     renderManageList();
     render();
@@ -723,7 +754,7 @@
     renderManageList();
     render();
   }
-
+ 
   // ---------- wiring ----------
   function wireEvents(){
     document.getElementById('monthPicker').addEventListener('change', e=>{
@@ -741,10 +772,10 @@
       ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('active'); });
     });
   }
-
+ 
   // expose for inline handlers
-  window.PacingApp = { toggleAccount, editCampaign, deleteCampaign, switchManageTab, updateBudget, updateSchedule };
-
+  window.PacingApp = { toggleAccount, editCampaign, deleteCampaign, switchManageTab, updateBudget, toggleRunDay };
+ 
   // ---------- init ----------
   (async function init(){
     const principal = await checkAuth();
