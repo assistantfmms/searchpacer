@@ -105,6 +105,7 @@
   .campaign-table tr:hover td{background:rgba(255,255,255,0.015);}
   .cname{font-size:13px; font-weight:500;}
   .cname .sub{display:block; font-size:11px; color:var(--text-faint); font-family:var(--mono); margin-top:2px;}
+  .sched-tag{display:inline-block; margin-left:8px; font-size:10px; font-family:var(--mono); padding:2px 6px; border-radius:4px; background:var(--accent-dim); color:var(--accent); vertical-align:middle;}
   .num{font-family:var(--mono); font-size:12.5px; text-align:right; white-space:nowrap;}
 
   .pace-cell{width:220px;}
@@ -268,9 +269,16 @@
         <div class="field">
           <label>Daily budget</label>
           <input type="number" id="newCampaignBudget" placeholder="0">
-          <div class="hint">The daily budget set in Google Ads for this campaign — the tracker works out the monthly cap and pacing from this (daily × 30.4).</div>
+        </div>
+        <div class="field">
+          <label>Runs</label>
+          <select id="newCampaignSchedule">
+            <option value="daily">Every day</option>
+            <option value="weekdays">Weekdays only</option>
+          </select>
         </div>
       </div>
+      <div class="hint" style="margin:-8px 0 12px;">The daily budget set in Google Ads for this campaign — the tracker works out the monthly cap and pacing from this (daily × 30.4 for every-day campaigns, or daily × actual weekdays for weekday-only ones).</div>
       <button id="btnAddCampaign" class="primary">Add to <span id="addToAccountLabel"></span></button>
     </div>
     <div class="modal-foot">
@@ -437,17 +445,44 @@
 
   const GOOGLE_DAYS_PER_MONTH = 30.4; // Google Ads' average-days-per-month constant for monthly spend caps
 
+  // Counts how many days from day 1 through endDay (inclusive) match a campaign's schedule.
+  // 'daily' counts every day; 'weekdays' excludes Saturdays and Sundays.
+  function countRunDays(monthKey, endDay, schedule){
+    if(endDay <= 0) return 0;
+    if(schedule !== 'weekdays') return endDay;
+    const [y,m] = monthKey.split('-').map(Number);
+    let count = 0;
+    for(let d=1; d<=endDay; d++){
+      const dow = new Date(y, m-1, d).getDay(); // 0=Sun .. 6=Sat
+      if(dow !== 0 && dow !== 6) count++;
+    }
+    return count;
+  }
+
   function campaignStats(campaign, monthKey, asOfDay){
     const dim = daysInMonth(monthKey);
+    const schedule = campaign.schedule === 'weekdays' ? 'weekdays' : 'daily';
     const dailyBudget = getBudgetForMonth(campaign, monthKey);
-    const monthlyCap = dailyBudget * GOOGLE_DAYS_PER_MONTH; // what Google won't exceed this month, per its own pacing
+    const runDaysInMonth = countRunDays(monthKey, dim, schedule);
+    const runDaysElapsed = countRunDays(monthKey, asOfDay, schedule);
+    // Google's real monthly delivery cap is ALWAYS daily budget × 30.4, regardless of ad
+    // scheduling — Google does not reduce this ceiling for a weekdays-only campaign. That's
+    // exactly the risk this tool needs to surface: with fewer active days to spend the same
+    // 30.4-day-equivalent total, Google can (and will) push spend well above the nominal daily
+    // budget on the days a weekday-only campaign IS active, to still reach that monthly figure.
+    const monthlyCap = dailyBudget * GOOGLE_DAYS_PER_MONTH;
     const {spend, date} = getLatestSpend(campaign.id, monthKey);
-    // "where it should be tracking": daily budget × days elapsed, not monthlyCap ÷ actual days-in-month
-    const expected = asOfDay > 0 ? dailyBudget * asOfDay : 0;
+    // "where it should be tracking": daily budget × applicable days elapsed, so weekends don't
+    // count against a campaign that was never scheduled to spend on them.
+    const expected = runDaysElapsed > 0 ? dailyBudget * runDaysElapsed : 0;
     const pace = expected > 0 ? spend/expected : (spend > 0 ? Infinity : null);
-    const projected = asOfDay > 0 ? (spend/asOfDay)*dim : null;
+    const projected = runDaysElapsed > 0 ? (spend/runDaysElapsed) * runDaysInMonth : null;
     const status = classify(pace);
-    return {dailyBudget, monthlyCap, spend, date, expected, pace, projected, status, dim};
+    // Where the pace bar's "as of today" marker sits, as a % along the monthly-cap-width track.
+    // Always expressed relative to monthlyCap (the track's own scale) so it lines up correctly
+    // whether that cap was computed via the 30.4 constant (daily) or actual run-days (weekdays).
+    const markerPct = monthlyCap > 0 ? Math.min((expected/monthlyCap)*100, 100) : 0;
+    return {dailyBudget, monthlyCap, spend, date, expected, pace, projected, status, dim, schedule, runDaysInMonth, runDaysElapsed, markerPct};
   }
 
   // ---------- rendering ----------
@@ -506,7 +541,6 @@
   function renderAccounts(){
     const asOfDay = computeAsOfDay(selectedMonth);
     const dim = daysInMonth(selectedMonth);
-    const markerPct = asOfDay>0 ? Math.min((asOfDay/GOOGLE_DAYS_PER_MONTH)*100, 100) : 0;
     const wrap = document.getElementById('accountsWrap');
 
     if(data.campaigns.length === 0){
@@ -530,7 +564,7 @@
         return `
           <tr>
             <td>
-              <div class="cname">${escapeHtml(c.name)}
+              <div class="cname">${escapeHtml(c.name)}${s.schedule==='weekdays' ? '<span class="sched-tag">Mon\u2013Fri</span>' : ''}
                 <span class="sub">${s.date ? 'updated '+s.date : 'no data'}</span>
               </div>
             </td>
@@ -539,7 +573,7 @@
             <td class="pace-cell">
               <div class="pace-track">
                 <div class="pace-fill ${s.status}" style="width:${fillPct}%;"></div>
-                <div class="pace-marker" style="left:${markerPct}%;" title="time elapsed"></div>
+                <div class="pace-marker" style="left:${s.markerPct}%;" title="time elapsed"></div>
               </div>
               <div class="pace-meta">
                 <span class="pace-pct ${s.status}">${fmtPct(s.pace)} of pace</span>
@@ -615,17 +649,36 @@
     }
     el.innerHTML = list.map(c=>{
       const daily = getBudgetForMonth(c, selectedMonth);
+      const schedule = c.schedule === 'weekdays' ? 'weekdays' : 'daily';
+      const dim = daysInMonth(selectedMonth);
+      const cap = daily * GOOGLE_DAYS_PER_MONTH; // Google's real cap — unaffected by scheduling
+      const runDaysInMonth = countRunDays(selectedMonth, dim, schedule);
+      const effectiveRate = schedule==='weekdays' && runDaysInMonth>0 ? cap/runDaysInMonth : null;
+      const capLine = effectiveRate!==null
+        ? `daily budget for ${selectedMonth} · cap ${fmtMoney(cap)}/mo · Google can push up to ~${fmtMoney(effectiveRate)}/active day to hit that cap across only ${runDaysInMonth} weekdays`
+        : `daily budget for ${selectedMonth} · cap ${fmtMoney(cap)}/mo`;
       return `
         <div class="campaign-list-item">
           <div class="info">
             <div class="n">${escapeHtml(c.name)}</div>
-            <div class="a">daily budget for ${selectedMonth} · cap ${fmtMoney(daily*GOOGLE_DAYS_PER_MONTH)}/mo</div>
+            <div class="a">${capLine}</div>
           </div>
+          <select class="budget-input" style="width:118px;" onchange="PacingApp.updateSchedule('${c.id}', this.value)">
+            <option value="daily" ${schedule==='daily'?'selected':''}>Every day</option>
+            <option value="weekdays" ${schedule==='weekdays'?'selected':''}>Weekdays only</option>
+          </select>
           <input type="number" class="budget-input" value="${daily}"
                  onchange="PacingApp.updateBudget('${c.id}', this.value)">
           <button class="icon-btn" onclick="PacingApp.deleteCampaign('${c.id}')" title="Delete">🗑</button>
         </div>`;
     }).join('');
+  }
+  function updateSchedule(id, val){
+    const c = data.campaigns.find(x=>x.id===id);
+    if(!c) return;
+    c.schedule = val === 'weekdays' ? 'weekdays' : 'daily';
+    saveData();
+    render();
   }
   function updateBudget(id, val){
     const c = data.campaigns.find(x=>x.id===id);
@@ -638,12 +691,14 @@
   function addCampaign(){
     const nameEl = document.getElementById('newCampaignName');
     const budgetEl = document.getElementById('newCampaignBudget');
+    const scheduleEl = document.getElementById('newCampaignSchedule');
     const name = nameEl.value.trim();
     if(!name){ showToast('Enter a campaign name'); return; }
-    const c = { id: uid(), name, account: activeManageAccount, budgets: {} };
+    const schedule = scheduleEl.value === 'weekdays' ? 'weekdays' : 'daily';
+    const c = { id: uid(), name, account: activeManageAccount, budgets: {}, schedule };
     c.budgets[selectedMonth] = Number(budgetEl.value) || 0;
     data.campaigns.push(c);
-    nameEl.value=''; budgetEl.value='';
+    nameEl.value=''; budgetEl.value=''; scheduleEl.value='daily';
     saveData();
     renderManageList();
     render();
@@ -688,7 +743,7 @@
   }
 
   // expose for inline handlers
-  window.PacingApp = { toggleAccount, editCampaign, deleteCampaign, switchManageTab, updateBudget };
+  window.PacingApp = { toggleAccount, editCampaign, deleteCampaign, switchManageTab, updateBudget, updateSchedule };
 
   // ---------- init ----------
   (async function init(){
