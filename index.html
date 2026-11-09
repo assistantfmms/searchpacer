@@ -494,9 +494,10 @@
     // budget on the days a restricted-schedule campaign IS active, to still reach that figure.
     const monthlyCap = dailyBudget * GOOGLE_DAYS_PER_MONTH;
     const {spend, date} = getLatestSpend(campaign.id, monthKey);
-    // "where it should be tracking": daily budget × applicable days elapsed, so days the
-    // campaign was never scheduled to run on don't count against it.
-    const expected = runDaysElapsed > 0 ? dailyBudget * runDaysElapsed : 0;
+    // "where it should be tracking": the full monthly cap (daily × 30.4) spread evenly across the
+    // days the campaign is actually scheduled to run. A Mon–Fri campaign is expected to spend
+    // cap ÷ weekdays per active day, so it is not flagged for a "low" daily rate it was never meant to hold.
+    const expected = runDaysInMonth > 0 ? monthlyCap * (runDaysElapsed / runDaysInMonth) : 0;
     const pace = expected > 0 ? spend/expected : (spend > 0 ? Infinity : null);
     const projected = runDaysElapsed > 0 ? (spend/runDaysElapsed) * runDaysInMonth : null;
     const status = classify(pace);
